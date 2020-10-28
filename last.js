@@ -1,17 +1,17 @@
-/* INICIO 
-DEL
-PROGRAMA */
+if(booleano){
+    if(false){
+
+    }
+}
+
+
 const _var="variable"; /* VARIABLE */
 
 var texto="hello world !"; /* VARIABLE STRING */
 let numero=65; /* VARIABLE NUMERICA */
 var booleano=true; /* VARIABLE BOOLEANA */
 
-if(booleano){ /* SENTENCIA IF */
-    if(false){
 
-    }
-}
  
 while(booleano){ /* SENTENCIA WHILE */
 
