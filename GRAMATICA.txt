@@ -1,0 +1,69 @@
+    =====> A L F A B E T O <=====
+    
+    
+        >>> TERMINALES <<<
+        
+    var  let  const  variable  =  numero  string  bool  if  while
+    foreach  switch  in  case  default  break  (  )  {  }  :  ;  ,
+    
+        
+        >>> NO TERMINALES <<<
+        
+    S  ASIGNACION  SENTENCIA_IF  SENTENCIA_WHILE  SENTENCIA_FOREACH
+    SENTENCIA_SWITCH  DECLARAR_FUNCION  LLAMAR_FUNCION  TIPO_VARIABLE
+    VALOR  SENTENCIA_CASE  SENTENCIA_DEFAULT  BREAK  PARAMETRO
+    
+    
+    =====> G R A M Á T I C A <=====
+    
+    
+    S ~~> ASIGNACION
+        | SENTENCIA_IF
+        | SENTENCIA_WHILE
+        | SENTENCIA_FOREACH
+        | SENTENCIA_SWITCH
+        | DECLARAR_FUNCION
+        | LLAMAR_FUNCION
+        | ɛ
+        
+    
+    ASIGNACION ~~> TIPO_VARIABLE variable = VALOR ; S
+    
+    TIPO_VARIABLE ~~> var
+                    | let
+                    | const
+    
+    VALOR ~~> variable
+            | numero
+            | string
+            | bool
+    
+    SENTENCIA_IF ~~> if ( variable ) { S } S
+                    | if ( bool ) { S } S
+    
+    SENTENCIA_WHILE ~~> while ( variable ) { S } S
+                        | while ( bool ) { S } S
+    
+    SENTENCIA_FOREACH ~~> foreach ( variable in variable ) { S } S
+    
+    SENTENCIA_SWITCH ~~> switch ( variable ) { SENTENCIA_CASE } S
+    
+    SENTENCIA_CASE ~~> case VALOR: S BREAK SENTENCIA_CASE
+                     | default VALOR: S BREAK
+                     | ɛ
+                                
+    BREAK ~~> break ;
+            | ɛ
+    
+    DECLARAR_FUNCION ~~> TIPO_VARIABLE variable = ( PARAMETRO ) => { S } S
+                       | TIPO_VARIABLE variable = ( ) => { S } S
+    
+    LLAMAR_FUNCION ~~> variable ( PARAMETRO ) ; S
+                        | variable ( ) ; S
+    
+    PARAMETRO ~~> variable
+                | variable , PARAMETRO
+    
+    
+    
+    

@@ -1,19 +1,19 @@
-from io import FileIO
 import traceback
 
 archivo=""
 
 letra=["a","b","c","d","e","f","g","h","i","j","k","l","m","n","ñ","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+
 digito=["0","1","2","3","4","5","6","7","8","9"]
 
-tk={
-    "if":"if",
+
+tk={ "if":"if",
     "while":"while",
     "switch":"switch",
     "foreach":"foreach",
     "case":"case",
-    "dospuntos":":",
     "in":"in",
+    "dospuntos":":",
     "comilla":['"',"'"],
     "coma":",",
     "punto":".",
@@ -29,19 +29,33 @@ tk={
     "asinc":"=>"
 }
 
+terminales=tk.keys()
+
+no_terminales=["S","ASIGNACION","SENTENCIA_IF","SENTENCIA_WHILE","SENTENCIA_FOREACH","SENTENCIA_SWITCH","DECLARAR_FUNCION","LLAMAR_FUNCION","TIPO_VARIABLE","VALOR","SENTENCIA_CASE","SENTENCIA_DEFAULT","BREAK","PARAMETRO"]
+
 lista_tokens, lista_error=[], []
 
-# AFD PARA LEER JAVASCRIPT ES6
 
+# AFD PARA ANÁLISIS LÉXICO
 def AFD(script):
 
     global tk, lista_tokens, lista_error
     lista_tokens,lista_error=[],[]
 
     estado, linea, columna=0, 1, 0
-    lexema, token= "",""
+    lexema, token, char_sig= "","",""
 
+    i=0;
     for char in script:
+
+        i+=1
+        
+
+        try:
+            char_sig=script[i]
+        except:
+            char_sig="#"
+
         print(char, estado)
         columna+=1
 
@@ -51,7 +65,7 @@ def AFD(script):
 
         try:
 
-            if char in letra or char in digito or char=="_":
+            if char_sig in letra or char in digito or char=="_":
                 lexema+=char
                 
             elif estado==0:                
@@ -137,21 +151,16 @@ def AFD(script):
 
 
             if estado==2:
-                print("valido elpepe","'"+token+"'","'"+lexema+"'","'"+char+"'")
+                
                 lista_tokens.append(token)
                 token, lexema="", ""
-
-                input("press enter :3")
                 
                 estado=0
 
             elif estado==-1:
 
                 if char not in [""," ","\n"]:
-
-                    print("error elpepe","'"+token+"'","'"+lexema+"'","'"+char+"'")
                     lista_error.append(token)
-                    input("press enter :3")
 
                 token, lexema="", ""
                 
@@ -162,17 +171,320 @@ def AFD(script):
             print("=================, fallo en "+char,estado)
             traceback.print_exc()
 
-            input("press enter :3")
 
-
-    print("se terminó en el estado "+str(estado))
-    print("===================================================")   
-    print(script.split("\n"))
     print(lista_tokens)        
     print(lista_error)        
+
+
+# AP PARA ANÁLISIS SINTÁCTICO
+def AP():
+
+    estado, i="q0", 0
+
+    pila=[]
+
+    lista_tokens.append("#")
+
+    while i<len(lista_tokens-1):
+
+        token, token_sig, cabeza_pila=lista_tokens[i], lista_tokens[i+1], pila[len(pila)-1]
+        
+        if estado=="q0":
+
+            pila.append("#")
+            estado="q1"
+
+        elif estado=="q1":
+
+            pila.append("S")
+            estado="q2"
+
+        elif estado=="q2":#CONSIDERAR USAR ELIF EN CABEZA_PILA
+
+            if cabeza_pila=="S":
+
+                if token in ["var","let","const"]:
+
+                    pila.append("ASIGNACION")
+                    #FIX THIS, TAMBIEN DECLARAR_FUNCION INICIA CON tipo de variable
+
+                elif token=="if":
+
+                    pila.append("SENTENCIA_IF")
+                    print("iffff")
+
+                elif token=="while":
+
+                    pila.append("SENTENCIA_WHILE")
+
+                elif token=="foreach":
+
+                    pila.append("SENTENCIA_FOREACH")
+
+                elif token=="switch":
+
+                    pila.append("SENTENCIA_SWITCH")
+
+                elif token=="variable":
+
+                    pila.append("LLAMAR_FUNCION")
+
+
+            if cabeza_pila=="ASIGNACION":
+
+                pila.append("S","puntocoma" ,"VALOR" ,"igual" ,"variable" ,"TIPO_VARIABLE")
+
+
+            if cabeza_pila=="TIPO_VARIABLE":
+
+                if token=="var":
+
+                    pila.append("var")
+
+                elif token=="let":
+
+                    pila.append("let")
+
+                elif token=="const":
+
+                    pila.append("const")
+
+
+            if cabeza_pila=="VALOR":
+
+                if token=="variable":
+
+                    pila.append("variable")
+
+                elif token=="numero":
+
+                    pila.append("numero")
+
+                elif token=="string":
+
+                    pila.append("string")
+
+                elif token=="bool":
+
+                    pila.append("bool")
+
+
+            if cabeza_pila=="SENTENCIA_IF":
+
+                if lista_tokens[i+2]=="variable":
+
+                    pila.append("S","llaveB","S","llaveA","parB","variable","parA","if")
+
+                elif lista_tokens[i+2]=="bool":
+
+                    pila.append("S","llaveB","S","llaveA","parB","bool","parA","if")
+
             
+            if cabeza_pila=="SENTENCIA_WHILE":
+
+                if lista_tokens[i+2]=="variable":
+
+                    pila.append("S","llaveB","S","llaveA","parB","variable","parA","while")
+
+                elif lista_tokens[i+2]=="bool":
+
+                    pila.append("S","llaveB","S","llaveA","parB","bool","parA","while")
+
+            
+            if cabeza_pila=="SENTENCIA_FOREACH":
+
+                    pila.append("S","llaveB","S","llaveA","parB","variable","in","variable","parA","foreach")
+
+            
+            if cabeza_pila=="SENTENCIA_SWITCH":
+
+                    pila.append("S","llaveB","SENTENCIA_CASE","llaveA","parB","variable","parA","switch")
+
+            
+            if cabeza_pila=="SENTENCIA_CASE":
+
+                if token=="case":
+
+                    pila.append("SENTENCIA_CASE","BREAK","S","dospuntos","VALOR","case")
+
+                elif token=="default":
+
+                    pila.append("BREAK","S","dospuntos","default")
+
+                else:
+
+                    print("nada")
+
+
+            if cabeza_pila=="BREAK":
+
+                if token=="break":
+
+                    pila.append("puntocoma","break")
+
+                else:
+
+                    print("nada")
+
+
+            if cabeza_pila=="DECLARAR_FUNCION":
+
+                print("PENDIENTE")
+
+
+            if cabeza_pila=="LLAMAR_FUNCION":
+
+                pila.append("S","puntocoma","parB","")
+                print("PENDIENTE")
+
+
+            if cabeza_pila=="PARAMETRO":
+
+                if token_sig=="coma":
+
+                    pila.append("PARAMETRO","coma","variable")
+
+                else:
+                    
+                    pila.append("variable")
+
+
+            if cabeza_pila=="var" and token=="var":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="let" and token=="let":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="const" and token=="const":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="variable" and token=="variable":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="igual" and token=="igual":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="numero" and token=="numero":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="string" and token=="string":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="bool" and token=="bool":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="if" and token=="if":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="while" and token=="while":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="foreach" and token=="foreach":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="switch" and token=="switch":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="in" and token=="in":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="case" and token=="case":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="default" and token=="default":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="break" and token=="break":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="parA" and token=="parA":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="parB" and token=="parB":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="llaveA" and token=="llaveA":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="llaveB" and token=="llaveB":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="dospuntos" and token=="dospuntos":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="puntocoma" and token=="puntocoma":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="coma" and token=="coma":
+
+                pila.pop()
+                i+=1;
+
+            if cabeza_pila=="#" and token_sig=="#":
+
+                pila.pop()
+                i+=1;
+
+                estado="q3"
+
+
+        elif estado=="q3":
+
+            print("COMOOOOOOOO")
+
+
+    if pila:
+        print("ES VALIDO")
+    
+    else:
+        print("NO ES VALIDO :-(")
 
    
+#AFD DIVERSOS
 def Variable(lexema):
 
     if lexema in [""," ","\n","true","false"] or lexema in tk.values():
@@ -202,7 +514,6 @@ def Variable(lexema):
             return False
 
     return True
-
 
 def Numero(lexema):
 
@@ -274,13 +585,13 @@ def Basilisk():
 
         2. Validar con AFD
 
-        3. Validar con AFP
+        3. Validar con AP
 
         4. Dibujar diagrama de bloques de código
 
         5. Salir del programa
-        """)
 
+        """)
 
         opcion=input(">> ")
 
@@ -291,30 +602,48 @@ def Basilisk():
             temp=open(directorio)
 
             if(temp):
-                archivo=temp.read()
 
+                archivo=temp.read()
         
         elif opcion=="2":
 
             if archivo:
+
                 AFD(archivo)
 
             else:
 
-                print("No se ingresó el archivo xdV")
+                print("No se ha ingresado un script")
+
                 AFD(open("test.js").read())
             
-
         elif opcion=="3":
-            print("op 3")
+
+            if archivo:
+
+                if lista_tokens:
+
+                    AP()
+
+                else:
+
+                    print("No se ha hecho el análisis léxico")
+
+            else:
+                
+                print("No se ha ingresado un script")
+
+                AP(AFD(open("test.js").read()))
 
         elif opcion=="4":
+
             print("op 4")
 
         elif opcion=="5":
-            print(""".\n..\n...""")
-            salir=True    
 
+            print(""".\n..\n...""")
+
+            salir=True    
 
         else:
 

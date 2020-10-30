@@ -1,6 +1,6 @@
-if switch ( )
+const _var=" variable ";
 
-const _var = " variable " ;
+switch(_var){}
 
 var texto = " hello world ! " ;
 let numero = 65 ;
