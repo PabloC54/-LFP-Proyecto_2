@@ -1,11 +1,13 @@
 if(booleano){
-    if(false){
+    if(sds){
 
     }
 }
 
 
-const _var="variable"; /* VARIABLE */
+var _var=()=>{
+
+} /* VARIABLE */
 
 var texto="hello world !"; /* VARIABLE STRING */
 let numero=65; /* VARIABLE NUMERICA */
@@ -19,21 +21,25 @@ while(booleano){ /* SENTENCIA WHILE */
 
 foreach(char in texto){ /* SENTENCIA FOREACH */
 
+    if (true){
+        var variable="quepedo";
+        const num=(param, param, param, param)=>{
+
+            this("string");
+        }
+    }
+
 }
 
 switch(texto){ /* SENTENCIA SWITCH */
 
     case "hello world !": /* CASE */
 
-        break;
+        break
 
     case "bye world !":
 
-        break;
 
-    default: /* DEFAULT */
-
-        var mensaje="ninguna opción";
 
 }
 
