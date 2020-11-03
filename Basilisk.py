@@ -1,4 +1,5 @@
-import traceback
+import traceback, webbrowser
+from graphviz import Digraph
 
 archivo=""
 
@@ -28,25 +29,53 @@ tk={"if":"if",
     "parB":")",
     "llaveA":"{",
     "llaveB":"}",
-    "asinc":"=>"
+    "asinc":"=>",
+    "variable":"una variable que varia",
+    "string":"un texto",
+    "numero":"una cantidad numerica",
+    "bool":"un valor booleano"
+}
+
+tk_d={"if":"Sentencia if",
+    "while":"Sentencia while",
+    "switch":"Sentencia switch",
+    "case":"Sentencia case",
+    "break":" Sentenciabreak",
+    "default":"Sentencia default",
+    "foreach":"Sentencia foreach",
+    "in":"Sentencia in",
+    "dospuntos":"token para iniciar case",
+    "comilla":"token para iniciar y cerrar string",
+    "coma":"token para anexar mas de un elemento",
+    "punto":"token para saber que vos",
+    "var":"declaración de variable var",
+    "let":"declaración de variable let",
+    "const":"declaración de variable const",
+    "igual":"asignacion de valor a una variable",
+    "puntocoma":"fin de linea de sentencia",
+    "parA":"inicio de ingreso de parametros",
+    "parB":"fin de ingreso de parametros",
+    "llaveA":"inicio de bloque de codigo",
+    "llaveB":"fin de bloque de codigo",
+    "asinc":"Asignación de función a una variable",
+    "variable":"una variable que varia",
+    "string":"un texto",
+    "numero":"una cantidad numerica",
+    "bool":"un valor booleano"
 }
 
 terminales=tk.keys()
 
 no_terminales=["S","ASIGNACION","SENTENCIA_IF","SENTENCIA_WHILE","SENTENCIA_FOREACH","SENTENCIA_SWITCH","DECLARAR_FUNCION","LLAMAR_FUNCION","TIPO_VARIABLE","VALOR","SENTENCIA_CASE","SENTENCIA_DEFAULT","BREAK","PARAMETRO"]
 
-lista_tokens, lista_error=[], []
 
 
 # AFD PARA ANÁLISIS LÉXICO
 def AFD(script):
 
-    global tk, lista_tokens, lista_error
-    lista_tokens,lista_error=[],[]
-
+    lista_tokens,lista_reporte, lista_error=[],[],[]
     estado, linea, columna=0, 1, 0
     lexema, token, char_sig= "","",""
-
     comilla, comentario=False, False
 
     i=0;
@@ -74,19 +103,26 @@ def AFD(script):
                     
                     if char =="*" and char_sig=="/":
 
+                        lista_reporte.append(["Comentario",lexema,"Comentario multilinea","( "+str(linea)+", "+str(columna)+" )"])
+
+                        lexema=""
                         comentario=False
 
-                    elif char!="*":        
+
+                    elif char!="*" and char!="/":        
 
                         lexema+=char
 
                 elif comilla:
                     
                     if char in tk["comilla"]:
-                        
+
+                        lista_reporte.append(["string",lexema,tk_d["string"],"( "+str(linea)+", "+str(columna-1)+" )"])
+                        lista_reporte.append(["comilla",char,tk_d["comilla"],"( "+str(linea)+", "+str(columna)+" )"])                        
                         lista_tokens.append("string")
                         lista_tokens.append("comilla")
 
+                        lexema=""
                         comilla=False
 
                     else:              
@@ -96,7 +132,7 @@ def AFD(script):
 
                 else:
                 
-                    if char not in "{}()=,;:'\"":
+                    if char in letra+digito+["_","'",'"']:
 
                         lexema+=char
 
@@ -210,16 +246,25 @@ def AFD(script):
                             comentario=True                              
                             estado=1        
 
-                        else:
+                        else:               
 
                             estado=-1
-
+                            
 
                     if estado==1:
                         
                         if token:
-                            
+                              
                             lista_tokens.append(token)
+
+                            if lexema:
+
+                                lista_reporte.append([token,lexema,tk_d[token],"( "+str(linea)+", "+str(columna)+" )"])
+
+                            else:
+
+                                 lista_reporte.append([token,char,tk_d[token],"( "+str(linea)+", "+str(columna)+" )"])
+                                 
                         
                         token, lexema="", ""
                         estado=0
@@ -227,9 +272,16 @@ def AFD(script):
 
                     elif estado==-1:
 
-                        if token != "":
-                            
-                            lista_error.append(token)
+                        if lexema not in ">/*" and char not in ">/*":
+
+                            if lexema:
+
+                                lista_error.append([lexema,"( "+str(linea)+", "+str(columna)+" )"])
+
+                            else:
+
+                                lista_error.append([char,"( "+str(linea)+", "+str(columna)+" )"])
+                                 
 
                         token, lexema="", ""                    
                         estado=0
@@ -238,46 +290,80 @@ def AFD(script):
         except Exception as e:
             
             traceback.print_exc()
+  
 
+    #===//==> R E P O R T E S <==//===
 
-    print(lista_tokens)        
-    print(lista_error)        
+    # if lista_reporte:
 
+    #     Report(lista_reporte,"reporte_tokens",["Token","Lexema","Descripción","Línea y columna"])   
+
+    # if lista_error:
+
+    #     Report(lista_error,"reporte_error",["Lexema","Línea y columna"])   
+
+    return lista_tokens
 
 # AP PARA ANÁLISIS SINTÁCTICO
-def AP():
+def AP(lista_tokens):
 
+    lista_procedimientos=[]
+    # vacio="\u03BB"
+    vacio="lambda"
     estado, i="q0", 0
-
     pila=[]
 
     lista_tokens.append("#")
 
-    while i<len(lista_tokens)-1:
+    while i<len(lista_tokens)-1 or pila:
 
-        token, token_sig=lista_tokens[i], lista_tokens[i+1]
+        token, token_sig="",""
 
         try:
-            cabeza_pila=pila[len(pila)-1]
 
-        except:
-            cabeza_pila="#"
-          
-        # print("PILA:  ",pila," |  TOKEN:  '"+token+"'  |  TOKEN_SIG:  '"+token_sig+"'",i)
+            token, token_sig=lista_tokens[i], lista_tokens[i+1]
+
+        except: pass
+
+        tam=10
+
+        if i+tam>=len(lista_tokens):
+            tam=len(lista_tokens)-i
+
+        entrada_temp=lista_tokens[i:i+tam]        
+        pila_temp=pila[::-1].copy()
         
+        print("      \x1b[4;30;47m"+"  PILA  "+"\x1b[0m\n",pila_temp,"\n\n      \x1b[4;30;47m"+"  ENTRADA  "+"\x1b[0m\n",entrada_temp,"\n")
+
+        if pila:
+            cabeza_pila=pila[len(pila)-1]
+        else:
+            cabeza_pila=vacio
+
+        estado_inicial, simbolo_entrada, simbolo_salida=estado,"",""   
+
         if estado=="q0":
+
+            simbolo_entrada=vacio
+            simbolo_salida="#"
 
             pila.append("#")
             estado="q1"
 
         elif estado=="q1":
+            
+            simbolo_entrada=vacio
+            simbolo_salida="S"
+            cabeza_pila=vacio
 
             pila.append("S")
             estado="q2"
 
-        elif estado=="q2":#CONSIDERAR USAR ELIF EN CABEZA_PILA
+        elif estado=="q2":
 
             if cabeza_pila=="S":
+                
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
@@ -285,83 +371,106 @@ def AP():
                     
                     if lista_tokens[i+3] in ["variable","comilla","numero","bool"]:
 
+                        simbolo_salida="ASIGNACION"
                         pila.append("ASIGNACION")
 
                     elif lista_tokens[i+3]=="parA":
 
+                        simbolo_salida="DECLARAR FUNCION"
                         pila.append("DECLARAR_FUNCION")
 
                 elif token=="if":
                     
+                    simbolo_salida="SENTENCIA_IF"
                     pila.append("SENTENCIA_IF")
 
                 elif token=="while":
                     
+                    simbolo_salida="SENTENCIA_WHILE"
                     pila.append("SENTENCIA_WHILE")
 
                 elif token=="foreach":
                     
+                    simbolo_salida="SENTENCIA_FOREACH"
                     pila.append("SENTENCIA_FOREACH")
 
                 elif token=="switch":
                     
+                    simbolo_salida="SENTENCIA_SWITCH"
                     pila.append("SENTENCIA_SWITCH")
 
                 elif token=="variable":
-                    
+
+                    simbolo_salida="SENTENCIA_FUNCION"
                     pila.append("LLAMAR_FUNCION")
 
 
             elif cabeza_pila=="ASIGNACION":
 
+                simbolo_entrada=vacio
+
                 pila.pop()
 
                 for elemento in ["S","puntocoma" ,"VALOR" ,"igual" ,"variable" ,"TIPO_VARIABLE"]:
 
+                    simbolo_salida=elemento+" "+simbolo_salida
                     pila.append(elemento)
 
 
             elif cabeza_pila=="TIPO_VARIABLE":
                 
+                simbolo_entrada=vacio
+
                 pila.pop()
 
                 if token=="var":
 
+                    simbolo_salida="var"
                     pila.append("var")
 
                 elif token=="let":
 
+                    simbolo_salida="let"
                     pila.append("let")
 
                 elif token=="const":
 
+                    simbolo_salida="const"
                     pila.append("const")
 
 
             elif cabeza_pila=="VALOR":
+
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
                 if token=="variable":
 
+                    simbolo_salida="variable"
                     pila.append("variable")
 
                 elif token=="numero":
 
+                    simbolo_salida="numero"
                     pila.append("numero")
 
                 elif token=="comilla":
 
                     for elemento in ["comilla","string","comilla"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
                         pila.append(elemento)
 
                 elif token=="bool":
 
+                    simbolo_salida="bool"
                     pila.append("bool")
 
 
             elif cabeza_pila=="SENTENCIA_IF":
+                
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
@@ -369,16 +478,22 @@ def AP():
 
                     for elemento in ["S","llaveB","S","llaveA","parB","variable","parA","if"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
                 elif lista_tokens[i+2]=="bool":
 
                     for elemento in ["S","llaveB","S","llaveA","parB","bool","parA","if"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
             
             elif cabeza_pila=="SENTENCIA_WHILE":
+
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
@@ -386,34 +501,48 @@ def AP():
 
                     for elemento in ["S","llaveB","S","llaveA","parB","variable","parA","while"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
                 elif lista_tokens[i+2]=="bool":
 
                     for elemento in ["S","llaveB","S","llaveA","parB","bool","parA","while"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
             
             elif cabeza_pila=="SENTENCIA_FOREACH":
                 
+                simbolo_entrada=vacio
+                
                 pila.pop()
 
                 for elemento in ["S","llaveB","S","llaveA","parB","variable","in","variable","parA","foreach"]:
+
+                    simbolo_salida=elemento+" "+simbolo_salida
 
                     pila.append(elemento)
 
             
             elif cabeza_pila=="SENTENCIA_SWITCH":
                 
+                simbolo_entrada=vacio
+                
                 pila.pop()
 
                 for elemento in ["S","llaveB","SENTENCIA_CASE","llaveA","parB","variable","parA","switch"]:
+
+                    simbolo_salida=elemento+" "+simbolo_salida
 
                     pila.append(elemento)
 
             
             elif cabeza_pila=="SENTENCIA_CASE":
+                
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
@@ -421,16 +550,22 @@ def AP():
 
                     for elemento in ["SENTENCIA_CASE","BREAK","S","dospuntos","VALOR","case"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
                 elif token=="default":
 
                     for elemento in ["BREAK","S","dospuntos","default"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
 
             elif cabeza_pila=="BREAK":
+                
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
@@ -438,50 +573,68 @@ def AP():
 
                     for elemento in ["puntocoma","break"]:
 
+                        simbolo_salida=elemento+" "+simbolo_salida
+
                         pila.append(elemento)
 
 
             elif cabeza_pila=="DECLARAR_FUNCION":
+                
+                simbolo_entrada=vacio
                 
                 pila.pop()
 
                 if lista_tokens[i+4]=="variable":
 
                     for elemento in ["S","llaveB","S","llaveA","asinc","parB","PARAMETRO","parA","igual","variable","TIPO_VARIABLE"]:
+
+                        simbolo_salida=elemento+" "+simbolo_salida
                         
                         pila.append(elemento)
 
                 elif lista_tokens[i+4]=="parB":
                     
                     for elemento in ["S","llaveB","S","llaveA","asinc","parB","parA","igual","variable","TIPO_VARIABLE"]:
+
+                        simbolo_salida=elemento+" "+simbolo_salida
                     
                         pila.append(elemento)
 
 
             elif cabeza_pila=="LLAMAR_FUNCION":
                 
+                simbolo_entrada=vacio
+                
                 pila.pop()
                 
                 if lista_tokens[i+2] in ["variable","comilla","numero","valor"]:
 
                     for elemento in ["S","puntocoma","parB","PARAMETRO","parA","variable"]:
+
+                        simbolo_salida=elemento+" "+simbolo_salida
                         
                         pila.append(elemento)
 
                 elif lista_tokens[i+2]=="parB":
                     
                     for elemento in ["S","puntocoma","parB","parA","variable"]:
+
+                        simbolo_salida=elemento+" "+simbolo_salida
                     
                         pila.append(elemento)
 
 
             elif cabeza_pila=="PARAMETRO":
                 
+                simbolo_entrada=vacio
+                
                 pila.pop()
                                     
                 if token_sig=="coma" or lista_tokens[i+3]=="coma":
 
                     for elemento in ["PARAMETRO","coma","VALOR"]:
+
+                        simbolo_salida=elemento+" "+simbolo_salida
 
                         pila.append(elemento)
                         
@@ -491,131 +644,209 @@ def AP():
 
 
             elif cabeza_pila=="var" and token=="var":
+
+                simbolo_entrada="var"
+                simbolo_salida=vacio
                 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="let" and token=="let":
 
+                simbolo_entrada="let"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="const" and token=="const":
+
+                simbolo_entrada="const"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="variable" and token=="variable":
 
+                simbolo_entrada="variable"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="igual" and token=="igual":
+
+                simbolo_entrada="igual"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="asinc" and token=="asinc":
 
+                simbolo_entrada="asinc"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="numero" and token=="numero":
+
+                simbolo_entrada="numero"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="string" and token=="string":
 
+                simbolo_entrada="string"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="bool" and token=="bool":
+
+                simbolo_entrada="bool"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="comilla" and token=="comilla":
 
+                simbolo_entrada="comilla"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="if" and token=="if":
+
+                simbolo_entrada="if"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="while" and token=="while":
 
+                simbolo_entrada="while"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="foreach" and token=="foreach":
+
+                simbolo_entrada="foreach"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="switch" and token=="switch":
 
+                simbolo_entrada="switch"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="in" and token=="in":
+
+                simbolo_entrada="in"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="case" and token=="case":
 
+                simbolo_entrada="case"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="default" and token=="default":
+
+                simbolo_entrada="default"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="break" and token=="break":
 
+                simbolo_entrada="break"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="parA" and token=="parA":
+
+                simbolo_entrada="parA"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="parB" and token=="parB":
 
+                simbolo_entrada="parB"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="llaveA" and token=="llaveA":
+
+                simbolo_entrada="llaveA"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="llaveB" and token=="llaveB":
 
+                simbolo_entrada="llaveB"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="dospuntos" and token=="dospuntos":
+
+                simbolo_entrada="dospuntos"
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="puntocoma" and token=="puntocoma":
 
+                simbolo_entrada="puntocoma"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
             elif cabeza_pila=="coma" and token=="coma":
 
+                simbolo_entrada="coma"
+                simbolo_salida=vacio
+
                 pila.pop()
                 i+=1;
 
-            elif cabeza_pila=="#" and token_sig=="#":
+            elif cabeza_pila=="#":
+
+                simbolo_entrada=vacio
+                simbolo_salida=vacio
 
                 pila.pop()
                 i+=1;
@@ -624,28 +855,38 @@ def AP():
 
             else:
 
-                print("=============================================")
-                print("/////////////////// ERROR ///////////////////")
-                print("=============================================\n")
-                print("  Se esperaba "+cabeza_pila+"\n")
-                input("Presiona enter para salir\n")
+                print("=========================================================")
+                print("//////////////////////// ERROR //////////////////////////")
+                print("=========================================================\n")
+                print("  Se esperaba '"+cabeza_pila+"'. Se recibió '"+token+"'  ["+str(i)+"]")
+                print("\n=========================================================")
                 break
-
 
         elif estado=="q3":
 
             pass
 
-    print(pila)
+        estado_final=estado
+        
+        transicion_temp= "("+estado_inicial+","+simbolo_entrada+","+cabeza_pila+";"+estado_final+","+simbolo_salida+")"
+        print("      \x1b[4;30;47m"+"  TRANSICIÓN  "+"\x1b[0m\n",transicion_temp+"\n\n")
 
-    if pila in [["#"],["#","S"]]:
+        lista_procedimientos.append([pila_temp,entrada_temp,transicion_temp])
+
+        #input("\n.. Presiona enter ..\n")
+
+
+    if pila==[]:
         print("ES VALIDO")
+        lista_procedimientos.append(["--","--","ACEPTACION"])
     
     else:
-        print("NO ES VALIDO :-(")
+        print("NO ES VALIDO")
+        lista_procedimientos.append(["--","--","NO VÁLIDO"])
 
-    input("Presiona enter para terminar")
+    Report(lista_procedimientos,"procedimiento_pila",["Pila","Entrada","Transición"])
    
+
 #AFD DIVERSOS
 def Variable(lexema):
 
@@ -816,11 +1057,83 @@ def Bool(lexema):
     return True
 
 
-# MENU PRINCIPAL
+# GENERADOR DE REPORTES
+def Report(lista, nombre, encabezado):
 
+    html_file = open(nombre+".html", "w")
+
+    html_file.write(  # ENCABEZADO
+        "<!DOCTYPE html>\n"
+        + "\t<html>\n"
+        + "\t\t<head>\n"
+        + "\t\t\t<title>"+nombre+"</title>\n"
+        + "\t\t\t<link rel='stylesheet' type='text/css' href='style.css'/>\n"
+        + "\t\t</head>\n"
+        + "\t\t<body>\n"
+    )
+
+    html_file.write( # ENCABEZADO DE LA TABLA
+        "\t\t\t<table class='container'>\n"
+        + "\t\t\t\t<thead>\n"  
+        + "\t\t\t\t\t<tr>\n")
+
+    for elemento in encabezado:
+
+        html_file.write("\t\t\t\t\t\t<th><h1>{}</h1></th>\n".format(elemento))
+
+    html_file.write( # CUERPO DE LA TABLA
+        "\t\t\t\t\t</tr>\n"
+        + "\t\t\t\t</thead>\n\n"
+        +"\t\t\t\t<tbody>\n") 
+
+
+    for tupla in lista:
+
+        html_file.write("\t\t\t\t\t<tr>\n")
+
+        for elemento in tupla:
+
+            html_file.write("\t\t\t\t\t\t<td>{}</td>\n".format(elemento))
+
+        html_file.write("\t\t\t\t\t</tr>\n\n")
+
+    html_file.write(
+        "\t\t\t\t</tbody>\n"
+        + "\t\t\t</table>\n"
+        + "\t\t</body>\n"
+        + "\t</html>")
+        
+
+    webbrowser.open(nombre+".html") 
+
+# GENERADOR DE DIAGRAMA DE BLOQUES DE CÓDIGO
+
+def Bloques(lista_tokens):
+
+    grafo=Digraph(name="quepedoooo")
+    
+    with grafo.subgraph(name='cluster_0') as c:
+        c.attr(style='filled', color='lightgrey')
+        c.edges([('a0', 'a1'), ('a1', 'a2'), ('a2', 'a3')])
+
+    with grafo.subgraph(name='cluster_1') as c:
+        c.attr(style='filled', color='lightgrey')
+        c.edges([('b0', 'b1'), ('b1', 'b2'), ('b2', 'b3')])
+
+    grafo.edge('a0', 'b0')
+
+    grafo.render('Grafo', view=True)
+
+def SubGrafo(grafo):
+    
+
+
+
+# MENU PRINCIPAL
 def Basilisk():
 
     global archivo
+    lista_tokens=[]
 
     salir=False
 
@@ -851,15 +1164,16 @@ def Basilisk():
 
             temp=open(directorio,encoding="utf8")
 
-            if(temp):
+            if temp:
 
                 archivo=temp.read()
         
+
         elif opcion=="2":
 
             if archivo:
 
-                AFD(archivo)
+                lista_tokens=AFD(open(archivo,encoding="utf8").read())
 
             else:
 
@@ -867,13 +1181,14 @@ def Basilisk():
 
                 AFD(open("test.js",encoding="utf8").read())
             
+
         elif opcion=="3":
 
             if archivo:
 
                 if lista_tokens:
 
-                    AP()
+                    AP(lista_tokens)
 
                 else:
 
@@ -883,12 +1198,14 @@ def Basilisk():
                 
                 print("No se ha ingresado un script")
 
-                AFD(open("last.js",encoding="utf8").read())
-                AP()
+                lista_tokens=AFD(open("test.js",encoding="utf8").read())
+                AP(lista_tokens)
+
 
         elif opcion=="4":
 
             print("op 4")
+
 
         elif opcion=="5":
 
@@ -901,8 +1218,8 @@ def Basilisk():
             print("Opción no reconocida")
 
 
-#~~> EJECUCIÓN <~~
+#==//==> EJECUCIÓN <==//==
 
-Basilisk()
+#Basilisk()
 
-
+Bloques([])

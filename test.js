@@ -1,4 +1,4 @@
-const _var="";
+const vari="djsakdj";
 
 var funcion=(adios,hola,quepedo,ELPEPE)=>{
     print("ELPEPE");
@@ -14,4 +14,4 @@ let numero=65;
 :V
 :V
 :V
-*/ print("que pedooooo un comentario multilinea :o");
+*/ print("que pedooooo un comentario multilinea :o")

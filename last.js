@@ -1,6 +1,6 @@
 if(booleano){
     if(sds){
-
+        const dsldk=4;
     }
 }
 
@@ -35,11 +35,9 @@ switch(texto){ /* SENTENCIA SWITCH */
 
     case "hello world !": /* CASE */
 
-        break
+        break;
 
     case "bye world !":
-
-
 
 }
 
