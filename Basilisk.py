@@ -36,32 +36,32 @@ tk={"if":"if",
     "bool":"un valor booleano"
 }
 
-tk_d={"if":"Sentencia if",
-    "while":"Sentencia while",
-    "switch":"Sentencia switch",
-    "case":"Sentencia case",
-    "break":" Sentenciabreak",
-    "default":"Sentencia default",
-    "foreach":"Sentencia foreach",
-    "in":"Sentencia in",
-    "dospuntos":"token para iniciar case",
-    "comilla":"token para iniciar y cerrar string",
-    "coma":"token para anexar mas de un elemento",
-    "punto":"token para saber que vos",
-    "var":"declaración de variable var",
-    "let":"declaración de variable let",
-    "const":"declaración de variable const",
-    "igual":"asignacion de valor a una variable",
-    "puntocoma":"fin de linea de sentencia",
-    "parA":"inicio de ingreso de parametros",
-    "parB":"fin de ingreso de parametros",
-    "llaveA":"inicio de bloque de codigo",
-    "llaveB":"fin de bloque de codigo",
-    "asinc":"Asignación de función a una variable",
-    "variable":"una variable que varia",
-    "string":"un texto",
-    "numero":"una cantidad numerica",
-    "bool":"un valor booleano"
+tk_d={"if":"Sentencia que corre dependiendo de una condicional",
+    "while":"Sentencia que se ejecuta en bucle hasta cumplir cierta condición",
+    "switch":"Sentencia que tiene varias ramas de ejecución",
+    "case":"Posible instrucción en una sentencia switch",
+    "break":"Termina la instrucción de una sentencia case",
+    "default":"Secuencia que corre como última opción en una sentencia switch",
+    "foreach":"Secuencia que itera en una coleccion de datos",
+    "in":"Palabra reservada",
+    "dospuntos":"Indica el inicio del bloque de código de una sentencia case",
+    "comilla":"Indica el inicio y el cierre de un valor string",
+    "coma":"Separa los distintos parámetros con los que se llama a una función",
+    "punto":"Separa la parte entera y la parte decimal de un número no entero",
+    "var":"Declaración de variable tipo var",
+    "let":"Declaración de variable tipo let",
+    "const":"Declaración de variable tipo const",
+    "igual":"Separa la variable a asignar del valor asignado",
+    "puntocoma":"Indica el fin de una sentencia simple",
+    "parA":"Indica el inicio de ingreso de parámetros, condición...",
+    "parB":"Indica el fin de ingreso de parámetros, condición...",
+    "llaveA":"Indica el inicio de un bloque de codigo",
+    "llaveB":"Indica el fin fin de un bloque de codigo",
+    "asinc":"Separa la asignación de función a una variable",
+    "variable":"Un valor sujeto a cambios",
+    "string":"Una cadena de texto, números, símbolos...",
+    "numero":"Una cantidad numérica",
+    "bool":"Un valor booleano"
 }
 
 terminales=tk.keys()
@@ -290,19 +290,24 @@ def AFD(script):
         except Exception as e:
             
             traceback.print_exc()
+
+    print(lista_tokens)
+    print(lista_error)
   
 
     #===//==> R E P O R T E S <==//===
 
-    # if lista_reporte:
+    if lista_reporte:
 
-    #     Report(lista_reporte,"reporte_tokens",["Token","Lexema","Descripción","Línea y columna"])   
+        Report(lista_reporte,"reporte_tokens",["Token","Lexema","Descripción","Línea y columna"])   
 
-    # if lista_error:
+    if lista_error:
 
-    #     Report(lista_error,"reporte_error",["Lexema","Línea y columna"])   
+        Report(lista_error,"reporte_error",["Lexema","Línea y columna"])   
+
 
     return lista_tokens
+
 
 # AP PARA ANÁLISIS SINTÁCTICO
 def AP(lista_tokens):
@@ -320,7 +325,6 @@ def AP(lista_tokens):
         token, token_sig="",""
 
         try:
-
             token, token_sig=lista_tokens[i], lista_tokens[i+1]
 
         except: pass
@@ -869,20 +873,21 @@ def AP(lista_tokens):
         estado_final=estado
         
         transicion_temp= "("+estado_inicial+","+simbolo_entrada+","+cabeza_pila+";"+estado_final+","+simbolo_salida+")"
-        print("      \x1b[4;30;47m"+"  TRANSICIÓN  "+"\x1b[0m\n",transicion_temp+"\n\n")
+        print("      \x1b[4;30;47m"+"  TRANSICIÓN  "+"\x1b[0m\n",transicion_temp+"\n")
 
         lista_procedimientos.append([pila_temp,entrada_temp,transicion_temp])
 
-        #input("\n.. Presiona enter ..\n")
+        input(".. [ Presiona enter ] ..\n\n")
 
 
     if pila==[]:
-        print("ES VALIDO")
+        print("\x1b[6;30;42m"+"  ANÁLISIS SINTÁCTICO REALIZADO CON ÉXITO, ENTRADA VÁLIDA  "+"\x1b[0m\n")
         lista_procedimientos.append(["--","--","ACEPTACION"])
     
     else:
-        print("NO ES VALIDO")
+        print("\x1b[6;30;41m"+"  ANÁLISIS SINTÁCTICO FALLIDO, ENTRADA NO VÁLIDA  "+"\x1b[0m\n")
         lista_procedimientos.append(["--","--","NO VÁLIDO"])
+        
 
     Report(lista_procedimientos,"procedimiento_pila",["Pila","Entrada","Transición"])
    
@@ -1107,7 +1112,6 @@ def Report(lista, nombre, encabezado):
     webbrowser.open(nombre+".html") 
 
 # GENERADOR DE DIAGRAMA DE BLOQUES DE CÓDIGO
-
 def Bloques(lista_tokens):
 
     grafo=Digraph(name="quepedoooo")
@@ -1123,11 +1127,6 @@ def Bloques(lista_tokens):
     grafo.edge('a0', 'b0')
 
     grafo.render('Grafo', view=True)
-
-def SubGrafo(grafo):
-    
-
-
 
 # MENU PRINCIPAL
 def Basilisk():
@@ -1167,19 +1166,33 @@ def Basilisk():
             if temp:
 
                 archivo=temp.read()
+                print("\nArchivo cargado con éxito")
+
+            else:
+
+                print("\nArchivo no encontrado\n")
         
 
         elif opcion=="2":
 
             if archivo:
 
-                lista_tokens=AFD(open(archivo,encoding="utf8").read())
+                lista_tokens=AFD(archivo)
 
             else:
 
-                print("No se ha ingresado un script")
+                print("No se ha ingresado un script\n")
+                directorio=input("        Ingrese el directorio del script\n")
+                    
+                try:
+                    archivo=open(directorio, encoding="utf8").read()
+                    
+                except:
+                    print("\nArchivo no encontrado\n")   
 
-                AFD(open("test.js",encoding="utf8").read())
+                if archivo:    
+
+                    lista_tokens=AFD(archivo)
             
 
         elif opcion=="3":
@@ -1193,18 +1206,31 @@ def Basilisk():
                 else:
 
                     print("No se ha hecho el análisis léxico")
+                        
+                    lista_tokens=AFD(archivo)
+                    AP(lista_tokens)
 
             else:
                 
                 print("No se ha ingresado un script")
+                directorio=input("        Ingrese el directorio del script\n")
 
-                lista_tokens=AFD(open("test.js",encoding="utf8").read())
-                AP(lista_tokens)
+                try:
+                    archivo=open(directorio, encoding="utf8").read()
+                    
+                except:
+                    print("\nArchivo no encontrado\n")        
+
+                if archivo:
+
+                    lista_tokens=AFD(archivo)
+                    AP(lista_tokens)
+
 
 
         elif opcion=="4":
 
-            print("op 4")
+            print("NO DISPONIBLE")
 
 
         elif opcion=="5":
@@ -1215,11 +1241,12 @@ def Basilisk():
 
         else:
 
-            print("Opción no reconocida")
+            if opcion:
+
+                print("Opción no reconocida")
 
 
 #==//==> EJECUCIÓN <==//==
 
-#Basilisk()
+Basilisk()
 
-Bloques([])

@@ -22,7 +22,7 @@ while(booleano){ /* SENTENCIA WHILE */
 foreach(char in texto){ /* SENTENCIA FOREACH */
 
     if (true){
-        var variable="quepedo";
+        var variable="que";
         const num=(param, param, param, param)=>{
 
             this("string");
@@ -43,11 +43,11 @@ switch(texto){ /* SENTENCIA SWITCH */
 
 
 var saludar=(param1, param2) => { /* FUNCION CON PARÁMETROS */
-    var saludo="hola chicos";
+    var saludo="hola mundo";
 }
 
 let despedir=() => { /* FUNCION SIN PARÁMETROS */
-    var saludo="adios chicos";
+    var saludo="adios mundo";
 }
 
 saludar("Nicolle", "Antonio"); /* LLAMADA A FUNCIÓN  */
